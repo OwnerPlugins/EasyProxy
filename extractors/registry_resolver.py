@@ -59,7 +59,9 @@ async def resolve_extractor(self, url: str, request_headers: dict, host: str = N
                 GLOBAL_PROXIES,
                 bypass_warp=bypass_warp,
             )
-            proxy_list = _build_proxy_list(proxy, host)
+            # Normalize host → extractor name for env var lookup (e.g. "city" → "cinemacity")
+            x = {"city": "cinemacity"}.get(host, host)
+            proxy_list = _build_proxy_list(proxy, x)
 
             if host == "vavoo":
                 if key not in self.extractors:
