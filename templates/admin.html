@@ -661,6 +661,7 @@ function updateSpeedtestButtons(cfg) {
 
 async function runAllSpeedtests() {
     const btn = document.getElementById('speedtest-btn');
+    if (btn.disabled) return;
     const result = document.getElementById('speedtest-result');
     btn.disabled = true;
     btn.innerHTML = '⏳ Running...';
