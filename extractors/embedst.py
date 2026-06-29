@@ -31,6 +31,7 @@ class EmbedStExtractor(BaseExtractor):
         super().__init__(request_headers, proxies, extractor_name="embedst")
         self.bypass_warp_active = bypass_warp
         self.mediaflow_endpoint = "hls_manifest_proxy"
+        self._curl_session = None
 
     @staticmethod
     def _node_bin() -> str | None:
@@ -135,14 +136,20 @@ class EmbedStExtractor(BaseExtractor):
         logger.info("EmbedSt: streamed.pk -> %s", resolved[:80])
         return resolved
 
+    async def _get_curl_session(self):
+        """Get or create a persistent curl_cffi session."""
+        if self._curl_session is None:
+            from curl_cffi import AsyncSession
+            self._curl_session = AsyncSession(impersonate="chrome124")
+        return self._curl_session
+
     async def _fetch_manifest(self, url: str, headers: dict) -> str | None:
         try:
-            from curl_cffi import AsyncSession
-            async with AsyncSession(impersonate="chrome124") as s:
-                resp = await s.get(url, headers=headers, timeout=20, allow_redirects=True)
-                if resp.status_code == 200:
-                    return resp.text
-                logger.debug("EmbedSt manifest fetch curl_cffi status %s", resp.status_code)
+            s = await self._get_curl_session()
+            resp = await s.get(url, headers=headers, timeout=20, allow_redirects=True)
+            if resp.status_code == 200:
+                return resp.text
+            logger.debug("EmbedSt manifest fetch curl_cffi status %s", resp.status_code)
         except Exception as exc:
             logger.debug("EmbedSt curl_cffi manifest fetch failed: %s", exc)
         # Fallback to aiohttp
@@ -157,5 +164,11 @@ class EmbedStExtractor(BaseExtractor):
         return None
 
     async def close(self):
+        if self._curl_session is not None:
+            try:
+                await self._curl_session.close()
+            except Exception:
+                pass
+            self._curl_session = None
         if self.session and not self.session.closed:
             await self.session.close()

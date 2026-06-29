@@ -181,7 +181,7 @@ def create_app():
         if filename.endswith('.ts'):
              # Create response, add headers, then prepare? No, FileResponse is unexpected.
              # Just pass headers.
-             headers['Content-Type'] = 'video/MP2T'
+             headers['Content-Type'] = 'video/mp2t'
              return web.FileResponse(file_path, headers=headers)
         
         return web.FileResponse(file_path, headers=headers)
